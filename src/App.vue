@@ -42,6 +42,11 @@
         
         <div class="sidebar-menu">
           <template v-if="currentUser.role === 'admin'">
+            <div class="menu-label">Dashboard</div>
+            <button @click="pilihMenu('Home')" :class="{'aktif': menuAktif === 'Home'}">
+               Home
+            </button>
+
             <div class="menu-label">Jadwal Harian</div>
             <button v-for="hari in ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat']" :key="hari" @click="pilihMenu(hari)" :class="{'aktif': menuAktif === hari}">
                Hari {{ hari }}
@@ -80,9 +85,9 @@
           <button @click="isSidebarOpen = true" class="btn-hamburger">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
           </button>
-          <div class="brand">
+          <div class="brand" @click="pilihMenu(currentUser.role === 'admin' ? 'Home' : 'Dashboard Saya')" title="Kembali ke Dashboard Utama">
             <span class="brand-title">SmartSchedule</span>
-            <span class="brand-subtitle">SMP Mode</span>
+            <span class="brand-subtitle">{{ pengaturanCetak.namaSekolah }}</span>
           </div>
         </div>
       </header>
@@ -116,10 +121,10 @@
             <h3 class="subsection-title" style="margin-top: 2rem;">Rincian Jadwal Kelas</h3>
             <div class="table-card">
               <table class="modern-clean-table">
-                <thead><tr><th style="width: 80px;">JAM</th><th style="width: 180px;">WAKTU</th><th>KELAS</th></tr></thead>
+                <thead><tr><th style="width: 80px;">JAM</th><th style="width: 150px;">WAKTU</th><th>KELAS</th></tr></thead>
                 <tbody>
                   <template v-for="(jadwals, hari) in groupedJadwalGuru" :key="hari">
-                    <tr class="row-group-clean"><td colspan="3">{{ hari.toUpperCase() }} ({{ jadwals.length }} JP)</td></tr>
+                    <tr class="row-group-clean"><td colspan="3">{{ hari.toUpperCase() }} <span class="badge-neutral">{{ jadwals.length }} JP</span></td></tr>
                     <tr v-for="item in jadwals" :key="item.id">
                       <td><span class="time-badge">Jam {{ item.jam_ke }}</span></td>
                       <td class="time-text">{{ item.waktu }}</td>
@@ -136,19 +141,51 @@
 
       <template v-if="currentUser.role === 'admin'">
         
-        <div v-if="menuAktif === 'Pengecualian Khusus'" class="page-content fade-in">
+        <div v-if="menuAktif === 'Home'" class="page-content fade-in">
+          <div class="content-wrapper" style="height: 100%; display: flex; flex-direction: column;">
+            <div class="panel-header-clean flex-between" style="flex-shrink: 0;">
+              <div>
+                <h2 class="section-title">Dashboard Utama</h2>
+                <p class="section-subtitle">Distribusi mengajar harian guru</p>
+              </div>
+            </div>
+            
+            <div class="table-card table-scroll-container">
+              <table class="modern-clean-table text-center-table freeze-header-table">
+                <thead><tr><th style="text-align: left; width: 60px;">KODE</th><th style="text-align: left;">NAMA GURU</th><th>SENIN</th><th>SELASA</th><th>RABU</th><th>KAMIS</th><th>JUMAT</th><th class="highlight-col">TOTAL</th><th>SK</th></tr></thead>
+                <tbody>
+                  <template v-for="(guruList, mapel) in groupedRekapHarian" :key="mapel">
+                    <tr class="row-group-clean"><td colspan="9" style="text-align: left;">{{ mapel.toUpperCase() }}</td></tr>
+                    <tr v-for="rekap in guruList" :key="rekap.kode">
+                      <td style="text-align: left;"><span class="fw-bold text-primary">{{ rekap.kode }}</span></td><td style="text-align: left;">{{ rekap.nama }}</td>
+                      <td><span :class="{'text-danger fw-bold': rekap.Senin > 6, 'text-muted': rekap.Senin === 0}">{{ rekap.Senin }}</span></td>
+                      <td><span :class="{'text-danger fw-bold': rekap.Selasa > 6, 'text-muted': rekap.Selasa === 0}">{{ rekap.Selasa }}</span></td>
+                      <td><span :class="{'text-danger fw-bold': rekap.Rabu > 6, 'text-muted': rekap.Rabu === 0}">{{ rekap.Rabu }}</span></td>
+                      <td><span :class="{'text-danger fw-bold': rekap.Kamis > 6, 'text-muted': rekap.Kamis === 0}">{{ rekap.Kamis }}</span></td>
+                      <td><span :class="{'text-danger fw-bold': rekap.Jumat > 6, 'text-muted': rekap.Jumat === 0}">{{ rekap.Jumat }}</span></td>
+                      <td class="highlight-col fw-bold" :class="{'text-danger': rekap.Total > rekap.target_jam, 'text-success': rekap.Total === rekap.target_jam}">{{ rekap.Total }}</td>
+                      <td>{{ rekap.target_jam }}</td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="menuAktif === 'Pengecualian Khusus'" class="page-content fade-in">
           <div class="content-wrapper">
             <div class="panel-header-clean">
-              <h2 class="section-title">Kendali Aturan & Pengecualian</h2>
+              <h2 class="section-title">Kendali Aturan</h2>
               <div class="segmented-control">
-                <button @click="subPengecualian = 'guru'" :class="{ 'active': subPengecualian === 'guru' }">Larangan Slot Guru</button>
-                <button @click="subPengecualian = 'mapel'" :class="{ 'active': subPengecualian === 'mapel' }">Hari Khusus Mapel</button>
+                <button @click="subPengecualian = 'guru'" :class="{ 'active': subPengecualian === 'guru' }">Larangan Guru</button>
+                <button @click="subPengecualian = 'mapel'" :class="{ 'active': subPengecualian === 'mapel' }">Hari Mapel</button>
               </div>
             </div>
 
             <div v-if="subPengecualian === 'guru'" class="panel-body-clean">
               <div class="flex-between" style="margin-bottom: 1rem;">
-                <p class="section-subtitle" style="margin:0;">Larang guru mengajar pada jam & hari tertentu.</p>
+                <p class="section-subtitle" style="margin:0;">Larang guru mengajar pada jam & hari tertentu</p>
                 <button @click="bukaModalLaranganGuru()" class="btn-solid">Tambah Larangan</button>
               </div>
               <div class="table-card">
@@ -156,7 +193,7 @@
                   <thead><tr><th>KODE GURU</th><th>HARI DILARANG</th><th>JAM KE-</th><th style="text-align:right;">AKSI</th></tr></thead>
                   <tbody>
                     <tr v-for="rule in rulesRestrictedSlots" :key="rule.id">
-                      <td><strong class="text-dark">{{ rule.kode_guru }}</strong></td><td>{{ rule.hari }}</td><td>Jam {{ rule.jam_ke }}</td>
+                      <td><strong class="text-primary">{{ rule.kode_guru }}</strong></td><td>{{ rule.hari }}</td><td>Jam {{ rule.jam_ke }}</td>
                       <td style="text-align:right;">
                         <button @click="hapusLaranganGuru(rule.id)" class="btn-icon-outline text-danger" title="Hapus"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                       </td>
@@ -169,7 +206,7 @@
 
             <div v-if="subPengecualian === 'mapel'" class="panel-body-clean">
               <div class="flex-between" style="margin-bottom: 1rem;">
-                <p class="section-subtitle" style="margin:0;">Atur mapel agar HANYA muncul di hari pilihan.</p>
+                <p class="section-subtitle" style="margin:0;">Atur mapel agar HANYA muncul di hari pilihan</p>
                 <button @click="bukaModalHariMapel()" class="btn-solid">Atur Hari Mapel</button>
               </div>
               <div class="table-card">
@@ -177,8 +214,8 @@
                   <thead><tr><th>MATA PELAJARAN</th><th>HARI YANG DIIZINKAN</th><th style="text-align:right;">AKSI</th></tr></thead>
                   <tbody>
                     <tr v-for="rule in rulesSubjectDays" :key="rule.id">
-                      <td><strong class="text-dark">{{ rule.mapel }}</strong></td>
-                      <td><span v-for="h in rule.allowed_days" :key="h" class="chip-label">{{ h }}</span></td>
+                      <td><strong class="text-primary">{{ rule.mapel }}</strong></td>
+                      <td><span v-for="h in rule.allowed_days" :key="h" class="badge-success" style="margin-right:6px;">{{ h }}</span></td>
                       <td style="text-align:right;">
                         <button @click="hapusHariMapel(rule.id)" class="btn-icon-outline text-danger" title="Hapus"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>
                       </td>
@@ -261,7 +298,7 @@
             <div class="panel-header-clean flex-between">
               <div>
                 <h2 class="section-title">Kelola Penugasan Guru</h2>
-                <p class="section-subtitle">Target Jam dan Tugas Mengajar.</p>
+                <p class="section-subtitle">Target Jam dan Tugas Mengajar</p>
               </div>
               <div class="action-buttons">
                 <button @click="bukaModalImportGuru()" class="btn-outline">Import Excel</button>
@@ -307,7 +344,7 @@
              <div class="panel-header-clean flex-between">
                <div>
                  <h2 class="section-title">Master Rombel Kelas</h2>
-                 <p class="section-subtitle">Daftar kelas diorganisir berdasarkan tingkatan angkatan.</p>
+                 <p class="section-subtitle">Daftar kelas berdasar tingkatan angkatan</p>
                </div>
                <div class="action-buttons"><button @click="bukaModalRombel()" class="btn-solid">Generate Otomatis</button><button @click="bukaModalRombelManual()" class="btn-outline">Tambah Manual</button></div>
              </div>
@@ -337,7 +374,7 @@
             <div class="panel-header-clean flex-between">
               <div>
                 <h2 class="section-title">Master Waktu & Sesi</h2>
-                <p class="section-subtitle">Atur rentang jam pelajaran dan jam khusus.</p>
+                <p class="section-subtitle">Atur rentang jam pelajaran dan jam khusus</p>
               </div>
               <div class="action-buttons"><button @click="bukaModalImportWaktu()" class="btn-outline">Import Excel</button><button @click="bukaModalWaktu()" class="btn-solid">Tambah Jam</button></div>
             </div>
@@ -346,7 +383,7 @@
                 <thead><tr><th>HARI</th><th>WAKTU</th><th>TIPE</th><th>KETERANGAN</th><th style="text-align:right;">AKSI</th></tr></thead>
                 <tbody>
                   <tr v-for="waktu in masterWaktu" :key="waktu.id">
-                    <td><strong class="text-dark">{{ waktu.hari }}</strong></td><td class="font-mono text-muted">{{ waktu.waktu }}</td>
+                    <td><strong class="text-dark">{{ waktu.hari }}</strong></td><td class="font-mono">{{ waktu.waktu }}</td>
                     <td><span class="text-muted font-small" style="text-transform:uppercase;">{{ waktu.tipe }}</span></td>
                     <td><span v-if="waktu.tipe==='pelajaran'" class="time-badge">Jam ke-{{waktu.jam_ke}}</span><strong v-else class="text-primary">{{waktu.nama_kegiatan}}</strong></td>
                     <td style="text-align:right;">
@@ -364,12 +401,11 @@
           <div class="content-wrapper">
             <div class="panel-header-clean">
               <div class="flex-between" style="margin-bottom:1rem;">
-                <h2 class="section-title">Pusat Evaluasi & Audit Jadwal</h2>
+                <h2 class="section-title">Pusat Evaluasi & Audit</h2>
                 <button @click="generateJadwalCerdas()" class="btn-solid-accent">✨ Auto-Draft SK</button>
               </div>
               <div class="segmented-control">
                 <button @click="subRekap = 'audit'" :class="{ 'active': subRekap === 'audit' }">Audit Kekurangan SK</button>
-                <button @click="subRekap = 'harian'" :class="{ 'active': subRekap === 'harian' }">Distribusi Harian</button>
                 <button @click="subRekap = 'jadwal'" :class="{ 'active': subRekap === 'jadwal' }">Jadwal Per Guru</button>
               </div>
             </div>
@@ -383,35 +419,12 @@
                       <tr class="row-group-clean"><td colspan="6">{{ mapel.toUpperCase() }} - {{ guruList.length }} Guru Kurang Jam</td></tr>
                       <tr v-for="rekap in guruList" :key="rekap.id">
                         <td><span class="fw-bold text-primary">{{ rekap.kode }}</span></td><td>{{ rekap.nama }}</td>
-                        <td class="text-muted">{{ rekap.target_jam }} JP</td><td><span class="badge-success">{{ rekap.totalJam }} JP</span></td>
-                        <td><span class="badge-danger">Kurang {{ rekap.totalKurang }} JP</span></td>
+                        <td class="text-muted">{{ rekap.target_jam }} JP</td><td><span class="fw-bold">{{ rekap.totalJam }} JP</span></td>
+                        <td class="text-danger fw-bold">Kurang {{ rekap.totalKurang }} JP</td>
                         <td><div style="display:flex;gap:4px;flex-wrap:wrap;"><span v-for="(detail, idx) in rekap.detailKurang" :key="idx" class="chip-label-warning">{{ detail }}</span></div></td>
                       </tr>
                     </template>
                     <tr v-if="rekapKekurangan.length === 0 && teachers.length > 0"><td colspan="6" class="empty-state">Aman Terkendali! Seluruh jadwal SK sudah terpenuhi.</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            
-            <div v-if="subRekap === 'harian'" class="panel-body-clean">
-              <div class="table-card">
-                <table class="modern-clean-table text-center-table">
-                  <thead><tr><th style="text-align: left; width: 60px;">KODE</th><th style="text-align: left;">NAMA GURU</th><th>SENIN</th><th>SELASA</th><th>RABU</th><th>KAMIS</th><th>JUMAT</th><th class="highlight-col">TOTAL</th><th>SK</th></tr></thead>
-                  <tbody>
-                    <template v-for="(guruList, mapel) in groupedRekapHarian" :key="mapel">
-                      <tr class="row-group-clean"><td colspan="9" style="text-align: left;">{{ mapel.toUpperCase() }}</td></tr>
-                      <tr v-for="rekap in guruList" :key="rekap.kode">
-                        <td style="text-align: left;"><span class="fw-bold text-primary">{{ rekap.kode }}</span></td><td style="text-align: left;">{{ rekap.nama }}</td>
-                        <td><span :class="{'text-danger fw-bold': rekap.Senin > 6, 'text-muted': rekap.Senin === 0}">{{ rekap.Senin }}</span></td>
-                        <td><span :class="{'text-danger fw-bold': rekap.Selasa > 6, 'text-muted': rekap.Selasa === 0}">{{ rekap.Selasa }}</span></td>
-                        <td><span :class="{'text-danger fw-bold': rekap.Rabu > 6, 'text-muted': rekap.Rabu === 0}">{{ rekap.Rabu }}</span></td>
-                        <td><span :class="{'text-danger fw-bold': rekap.Kamis > 6, 'text-muted': rekap.Kamis === 0}">{{ rekap.Kamis }}</span></td>
-                        <td><span :class="{'text-danger fw-bold': rekap.Jumat > 6, 'text-muted': rekap.Jumat === 0}">{{ rekap.Jumat }}</span></td>
-                        <td class="highlight-col fw-bold" :class="{'text-danger': rekap.Total > rekap.target_jam, 'text-success': rekap.Total === rekap.target_jam}">{{ rekap.Total }}</td>
-                        <td>{{ rekap.target_jam }}</td>
-                      </tr>
-                    </template>
                   </tbody>
                 </table>
               </div>
@@ -426,12 +439,12 @@
               </div>
               <div class="table-card" v-if="selectedGuruJadwal">
                 <table class="modern-clean-table" style="max-width: 600px;">
-                  <thead><tr><th style="width: 100px;">JAM</th><th style="width: 180px;">WAKTU</th><th>KELAS</th></tr></thead>
+                  <thead><tr><th style="width: 100px;">JAM</th><th style="width: 150px;">WAKTU</th><th>KELAS</th></tr></thead>
                   <tbody>
                     <template v-for="(jadwals, hari) in groupedJadwalGuru" :key="hari">
                       <tr class="row-group-clean"><td colspan="3">{{ hari.toUpperCase() }} ({{ jadwals.length }} JP)</td></tr>
                       <tr v-for="item in jadwals" :key="item.id">
-                        <td><span class="time-badge">Jam {{ item.jam_ke }}</span></td><td class="time-text">{{ item.waktu }}</td><td><span class="chip-label">{{ item.rombel }}</span></td>
+                        <td><span class="time-badge">Jam {{ item.jam_ke }}</span></td><td class="font-mono text-muted">{{ item.waktu }}</td><td><span class="chip-label">{{ item.rombel }}</span></td>
                       </tr>
                     </template>
                     <tr v-if="Object.keys(groupedJadwalGuru).length === 0"><td colspan="3" class="empty-state">Belum ada jadwal mengajar.</td></tr>
@@ -447,7 +460,7 @@
             <div class="panel-header-clean flex-between">
               <div>
                 <h2 class="section-title">Format Cetak Excel</h2>
-                <p class="section-subtitle">Kop surat dan TTD File Jadwal.</p>
+                <p class="section-subtitle">Kop surat dan TTD File Jadwal</p>
               </div>
               <button @click="exportKeExcel()" class="btn-solid-success">📥 Unduh Excel</button>
             </div>
@@ -466,7 +479,7 @@
 
         <div v-if="modalAturKelas.tampil" class="modal-overlay" @click.self="modalAturKelas.tampil = false"><div class="modal-box"><div class="modal-header"><h3>Pilih Kelas: {{ modalAturKelas.guru.nama }}</h3><button @click="modalAturKelas.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="rombel-selector"><label v-for="r in rombels" :key="r" class="rombel-checkbox"><input type="checkbox" :value="r" v-model="modalAturKelas.terpilih"><span class="checkbox-visual">{{ r }}</span></label></div></div><div class="modal-actions"><button @click="modalAturKelas.tampil = false" class="btn-outline">Batal</button><button @click="simpanPenugasan()" class="btn-solid">Simpan</button></div></div></div>
         <div v-if="modalGuru.tampil" class="modal-overlay" @click.self="modalGuru.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalGuru.form.id ? 'Edit Guru' : 'Tambah Guru' }}</h3><button @click="modalGuru.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="form-group"><label>Kode (Maks 4 Huruf)</label><input v-model="modalGuru.form.kode" maxlength="4" class="input-underline"></div><div class="form-group"><label>Nama Lengkap</label><input v-model="modalGuru.form.nama" class="input-underline"></div><div class="form-group"><label>Mata Pelajaran</label><input v-model="modalGuru.form.mapel" class="input-underline"></div><div style="display: flex; gap: 15px;"><div class="form-group" style="flex: 1;"><label>Durasi JP</label><input v-model="modalGuru.form.durasi_mapel" type="number" min="1" class="input-underline"></div><div class="form-group" style="flex: 1;"><label>Target SK</label><input v-model="modalGuru.form.target_jam" type="number" min="0" class="input-underline"></div></div></div><div class="modal-actions"><button @click="modalGuru.tampil = false" class="btn-outline">Batal</button><button @click="simpanGuru()" class="btn-solid">Simpan</button></div></div></div>
-        <div v-if="modalImport.tampil" class="modal-overlay" @click.self="modalImport.tampil = false"><div class="modal-box import-box"><div class="modal-header"><h3>Import via Excel</h3><button @click="modalImport.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><textarea v-model="modalImport.teksData" rows="6" class="input-underline text-muted" style="font-family: monospace;" placeholder="Paste data dari Excel di sini..."></textarea></div><div class="modal-actions"><button @click="modalImport.tampil = false" class="btn-outline">Batal</button><button @click="prosesImport()" class="btn-solid">Proses</button></div></div></div>
+        <div v-if="modalImport.tampil" class="modal-overlay" @click.self="modalImport.tampil = false"><div class="modal-box import-box"><div class="modal-header"><h3>Import via Excel</h3><button @click="modalImport.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><textarea v-model="modalImport.teksData" rows="6" class="input-underline font-mono" placeholder="Paste data dari Excel di sini..."></textarea></div><div class="modal-actions"><button @click="modalImport.tampil = false" class="btn-outline">Batal</button><button @click="prosesImport()" class="btn-solid">Proses</button></div></div></div>
         <div v-if="modalRombel.tampil" class="modal-overlay" @click.self="modalRombel.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalRombel.isManual ? 'Tambah Rombel' : 'Generate Rombel' }}</h3><button @click="modalRombel.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div v-if="modalRombel.isManual" class="form-group"><label>Nama Rombel</label><input v-model="modalRombel.form.nama" class="input-underline"></div><div v-else><div class="form-group"><label>Tingkat (Contoh: 7)</label><input v-model="modalRombel.form.tingkat" class="input-underline"></div><div class="form-group"><label>Jumlah Rombel</label><input v-model="modalRombel.form.jumlah" type="number" class="input-underline"></div></div></div><div class="modal-actions"><button @click="modalRombel.tampil = false" class="btn-outline">Batal</button><button @click="simpanRombel()" class="btn-solid">Simpan</button></div></div></div>
         <div v-if="modalWaktu.tampil" class="modal-overlay" @click.self="modalWaktu.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalWaktu.form.id ? 'Edit Jam' : 'Tambah Jam' }}</h3><button @click="modalWaktu.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="form-group"><label>Hari</label><select v-model="modalWaktu.form.hari" class="input-underline"><option v-for="h in ['Senin','Selasa','Rabu','Kamis','Jumat']" :key="h" :value="h">{{ h }}</option></select></div><div class="form-group"><label>Tipe Waktu</label><select v-model="modalWaktu.form.tipe" class="input-underline"><option value="pelajaran">Jam Pelajaran</option><option value="khusus">Kegiatan Khusus</option></select></div><div class="form-group"><label>Rentang Waktu</label><input v-model="modalWaktu.form.waktu" class="input-underline" placeholder="Misal: 07.00 - 07.40"></div><div class="form-group" v-if="modalWaktu.form.tipe === 'pelajaran'"><label>Jam Ke-</label><input v-model="modalWaktu.form.jam_ke" type="number" class="input-underline"></div><div class="form-group" v-if="modalWaktu.form.tipe === 'khusus'"><label>Nama Kegiatan</label><input v-model="modalWaktu.form.nama_kegiatan" class="input-underline" placeholder="Misal: Upacara"></div></div><div class="modal-actions"><button @click="modalWaktu.tampil = false" class="btn-outline">Batal</button><button @click="simpanWaktu()" class="btn-solid">Simpan</button></div></div></div>
         
@@ -497,7 +510,7 @@ const loginInput = ref('')
 const isLoadingLogin = ref(false)
 
 const isSidebarOpen = ref(false) 
-const menuAktif = ref('Senin')
+const menuAktif = ref('Home') 
 const subRekap = ref('audit')
 const subPengecualian = ref('guru')
 
@@ -527,7 +540,6 @@ const getPenugasanGuru = (kode) => penugasanSK.value.filter(p => p.kode_guru ===
 const getJadwalHariIni = () => masterWaktu.value.filter(w => w.hari === menuAktif.value)
 const getScheduleData = (rombel, jamKe) => allSchedules.value.filter(s => s.id_rombel === rombel && s.jam_ke === `${menuAktif.value}-${jamKe}`)
 
-// WARNA-WARNI KLASIK (Dikembalikan ke Desain Ultra-Compact - Border Kotak)
 const getKelasColorClass = (rombel) => {
   if (!rombel) return ''; 
   if (rombel.startsWith('7')) return 'header-kelas-7'; 
@@ -564,7 +576,6 @@ const groupedTeachers = computed(() => {
   const sortedGroups = {}; sortedKeys.forEach(key => sortedGroups[key] = groups[key]); return sortedGroups;
 });
 
-// LOGIKA CARD LAYOUT UNTUK MASTER ROMBEL
 const groupedRombels = computed(() => {
   const groups = {};
   masterRombel.value.forEach(r => {
@@ -659,7 +670,7 @@ const doLogin = async () => {
     const userRole = kode === 'BE' ? 'admin' : 'guru';
     currentUser.value = { kode: data.kode, nama: data.nama, role: userRole, target_jam: data.target_jam };
     localStorage.setItem('smartschedule_user', JSON.stringify(currentUser.value));
-    isLoggedIn.value = true; menuAktif.value = userRole === 'admin' ? 'Senin' : 'Dashboard Saya';
+    isLoggedIn.value = true; menuAktif.value = userRole === 'admin' ? 'Home' : 'Dashboard Saya';
     selectedGuruJadwal.value = data.kode; fetchData();
   } else { alert('❌ Kode Guru tidak ditemukan!'); }
   isLoadingLogin.value = false;
@@ -822,7 +833,7 @@ const hapusWaktu = async (id) => { await supabase.from('master_waktu').delete().
 // =========================================================================
 onMounted(() => { 
   const saved = localStorage.getItem('smartschedule_user'); 
-  if (saved) { currentUser.value = JSON.parse(saved); isLoggedIn.value = true; fetchData(); } 
+  if (saved) { currentUser.value = JSON.parse(saved); isLoggedIn.value = true; menuAktif.value = currentUser.value.role === 'admin' ? 'Home' : 'Dashboard Saya'; fetchData(); } 
 })
 </script>
 
@@ -866,9 +877,10 @@ body { margin: 0; background-color: #f8fafc; color: #334155; }
 .nav-left { display: flex; align-items: center; gap: 12px; }
 .btn-hamburger { background: transparent; border: none; cursor: pointer; color: #0f172a; padding: 4px; border-radius: 6px; transition: 0.2s; display: flex; align-items: center; justify-content: center;}
 .btn-hamburger:hover { background: #f8fafc; }
-.brand { display: flex; align-items: center; gap: 8px; border-left: 1px solid #e2e8f0; padding-left: 12px;}
+.brand { display: flex; align-items: center; gap: 8px; border-left: 1px solid #e2e8f0; padding-left: 12px; cursor: pointer; transition: 0.2s;}
+.brand:hover { opacity: 0.7; }
 .brand-title { font-size: 1rem; color: #0f172a; font-weight: 900; letter-spacing: -0.3px;}
-.brand-subtitle { font-size: 0.75rem; color: #94a3b8; font-weight: 500;}
+.brand-subtitle { font-size: 0.75rem; color: #94a3b8; font-weight: 500; text-transform: uppercase;}
 
 /* USER PROFILE IN HEADER DIHILANGKAN, DIPINDAH KE SIDEBAR */
 .user-profile { display: none; }
@@ -951,6 +963,8 @@ body { margin: 0; background-color: #f8fafc; color: #334155; }
 .modern-clean-table tbody tr:last-child td { border-bottom: none; }
 .modern-clean-table tbody tr:hover td { background: #fafafa; }
 .text-center-table th, .text-center-table td { text-align: center; }
+.freeze-header-table th { position: sticky; top: 0; z-index: 10; background: #ffffff;}
+.table-scroll-container { max-height: calc(100vh - 200px); overflow-y: auto;}
 
 .row-group-clean td { background: #f8fafc; font-size: 0.7rem; font-weight: 800; color: #475569; padding: 8px 16px; border-top: 1px solid #f1f5f9;}
 .empty-state { text-align: center; padding: 3rem 1rem !important; color: #94a3b8; font-size: 0.85rem;}
