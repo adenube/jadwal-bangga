@@ -713,7 +713,18 @@ const generateJadwalCerdas = async () => {
   const jamPelajaran = masterWaktu.value.filter(w => w.tipe === 'pelajaran');
   const payload = [];
   let trackerJamGuru = {}; teachers.value.forEach(t => trackerJamGuru[t.kode] = t.totalJam);
-  const tumpukanTugas = [...penugasanSK.value].sort((a, b) => b.durasi_jp - a.durasi_jp);
+  
+  // LOGIKA BARU: SORTING PRIORITAS MAPEL OR DI AWAL
+  const tumpukanTugas = [...penugasanSK.value].sort((a, b) => {
+    const gA = teachers.value.find(t => t.kode === a.kode_guru);
+    const gB = teachers.value.find(t => t.kode === b.kode_guru);
+    const isOrA = gA && gA.mapel.toUpperCase() === 'OR';
+    const isOrB = gB && gB.mapel.toUpperCase() === 'OR';
+    
+    if (isOrA && !isOrB) return -1;
+    if (!isOrA && isOrB) return 1;
+    return b.durasi_jp - a.durasi_jp;
+  });
 
   for (const tugas of tumpukanTugas) {
     const guru = teachers.value.find(t => t.kode === tugas.kode_guru); if (!guru) continue;
@@ -732,6 +743,13 @@ const generateJadwalCerdas = async () => {
 
         let slotHariIni = jamPelajaran.filter(j => j.hari === hari); let run = [];
         for (const sesi of slotHariIni) {
+          
+          // LOGIKA BARU: BARIKADE JAM KE-7 UNTUK OLAHRAGA
+          if (guru.mapel.toUpperCase() === 'OR' && parseInt(sesi.jam_ke) > 7) {
+            run = []; // Putus run berurutan jika ada
+            continue;
+          }
+
           const pnd = `${sesi.hari}-${sesi.jam_ke}`;
           const checkSlot = checkMappingLegality(guru.kode, guru.mapel, hari, sesi.jam_ke);
 
