@@ -16,9 +16,8 @@
               v-model="loginInput" 
               @keyup.enter="doLogin"
               type="text" 
-              maxlength="4"
               class="input-underline login-input-modern" 
-              placeholder="KODE GURU"
+              placeholder="KODE GURU / ADMIN"
               autocomplete="off"
             >
           </div>
@@ -571,7 +570,16 @@ const calculateTeachingHours = () => { teachers.value.forEach(t => { t.totalJam 
 // 4. COMPUTED PROPERTIES
 // =========================================================================
 const groupedTeachers = computed(() => {
-  const groups = {}; teachers.value.forEach(guru => { const mapel = guru.mapel ? guru.mapel.toUpperCase() : 'LAINNYA'; if (!groups[mapel]) groups[mapel] = []; groups[mapel].push(guru); });
+  const groups = {}; 
+  const guruAsli = teachers.value.filter(t => t.mapel.toUpperCase() !== 'SISTEM');
+  guruAsli.forEach(guru => { const mapel = guru.mapel ? guru.mapel.toUpperCase() : 'LAINNYA'; if (!groups[mapel]) groups[mapel] = []; groups[mapel].push(guru); });
+  const sortedKeys = Object.keys(groups).sort((a, b) => { let indexA = urutanMapel.indexOf(a); let indexB = urutanMapel.indexOf(b); if (indexA === -1) indexA = 999; if (indexB === -1) indexB = 999; return indexA - indexB || a.localeCompare(b); });
+  const sortedGroups = {}; sortedKeys.forEach(key => sortedGroups[key] = groups[key]); return sortedGroups;
+});
+
+const groupedTeachersAll = computed(() => {
+  const groups = {}; 
+  teachers.value.forEach(guru => { const mapel = guru.mapel ? guru.mapel.toUpperCase() : 'LAINNYA'; if (!groups[mapel]) groups[mapel] = []; groups[mapel].push(guru); });
   const sortedKeys = Object.keys(groups).sort((a, b) => { let indexA = urutanMapel.indexOf(a); let indexB = urutanMapel.indexOf(b); if (indexA === -1) indexA = 999; if (indexB === -1) indexB = 999; return indexA - indexB || a.localeCompare(b); });
   const sortedGroups = {}; sortedKeys.forEach(key => sortedGroups[key] = groups[key]); return sortedGroups;
 });
@@ -667,7 +675,7 @@ const doLogin = async () => {
   if (!loginInput.value) return; isLoadingLogin.value = true; const kode = loginInput.value.trim().toUpperCase();
   const { data } = await supabase.from('guru').select('*').eq('kode', kode).single();
   if (data) {
-    const userRole = kode === 'BE' ? 'admin' : 'guru';
+    const userRole = data.mapel.toUpperCase() === 'SISTEM' ? 'admin' : 'guru';
     currentUser.value = { kode: data.kode, nama: data.nama, role: userRole, target_jam: data.target_jam };
     localStorage.setItem('smartschedule_user', JSON.stringify(currentUser.value));
     isLoggedIn.value = true; menuAktif.value = userRole === 'admin' ? 'Home' : 'Dashboard Saya';
