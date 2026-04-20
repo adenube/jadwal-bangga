@@ -613,11 +613,14 @@ const groupedRekapKekurangan = computed(() => {
 });
 
 const rekapHarian = computed(() => {
-  return teachers.value.map(guru => {
-    const jadwalGuruIni = allSchedules.value.filter(s => s.guru_mapel.startsWith(guru.kode)); const hitungan = { Senin: 0, Selasa: 0, Rabu: 0, Kamis: 0, Jumat: 0 };
-    jadwalGuruIni.forEach(j => { const hari = j.jam_ke.split('-')[0]; if (hitungan[hari] !== undefined) hitungan[hari]++; });
-    return { kode: guru.kode, nama: guru.nama, mapel: guru.mapel, target_jam: guru.target_jam, Senin: hitungan.Senin, Selasa: hitungan.Selasa, Rabu: hitungan.Rabu, Kamis: hitungan.Kamis, Jumat: hitungan.Jumat, Total: jadwalGuruIni.length };
-  }).sort((a, b) => b.Total - a.Total);
+  return teachers.value
+    .filter(guru => guru.mapel.toUpperCase() !== 'SISTEM') // <-- TAMBAHKAN BARIS INI
+    .map(guru => {
+      const jadwalGuruIni = allSchedules.value.filter(s => s.guru_mapel.startsWith(guru.kode)); 
+      const hitungan = { Senin: 0, Selasa: 0, Rabu: 0, Kamis: 0, Jumat: 0 };
+      jadwalGuruIni.forEach(j => { const hari = j.jam_ke.split('-')[0]; if (hitungan[hari] !== undefined) hitungan[hari]++; });
+      return { kode: guru.kode, nama: guru.nama, mapel: guru.mapel, target_jam: guru.target_jam, Senin: hitungan.Senin, Selasa: hitungan.Selasa, Rabu: hitungan.Rabu, Kamis: hitungan.Kamis, Jumat: hitungan.Jumat, Total: jadwalGuruIni.length };
+    }).sort((a, b) => b.Total - a.Total);
 });
 
 const groupedRekapHarian = computed(() => {
