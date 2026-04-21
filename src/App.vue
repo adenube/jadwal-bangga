@@ -478,7 +478,53 @@
 
         <div v-if="modalAturKelas.tampil" class="modal-overlay" @click.self="modalAturKelas.tampil = false"><div class="modal-box"><div class="modal-header"><h3>Pilih Kelas: {{ modalAturKelas.guru.nama }}</h3><button @click="modalAturKelas.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="rombel-selector"><label v-for="r in rombels" :key="r" class="rombel-checkbox"><input type="checkbox" :value="r" v-model="modalAturKelas.terpilih"><span class="checkbox-visual">{{ r }}</span></label></div></div><div class="modal-actions"><button @click="modalAturKelas.tampil = false" class="btn-outline">Batal</button><button @click="simpanPenugasan()" class="btn-solid">Simpan</button></div></div></div>
         <div v-if="modalGuru.tampil" class="modal-overlay" @click.self="modalGuru.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalGuru.form.id ? 'Edit Guru' : 'Tambah Guru' }}</h3><button @click="modalGuru.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="form-group"><label>Kode (Maks 4 Huruf)</label><input v-model="modalGuru.form.kode" maxlength="4" class="input-underline"></div><div class="form-group"><label>Nama Lengkap</label><input v-model="modalGuru.form.nama" class="input-underline"></div><div class="form-group"><label>Mata Pelajaran</label><input v-model="modalGuru.form.mapel" class="input-underline"></div><div style="display: flex; gap: 15px;"><div class="form-group" style="flex: 1;"><label>Durasi JP</label><input v-model="modalGuru.form.durasi_mapel" type="number" min="1" class="input-underline"></div><div class="form-group" style="flex: 1;"><label>Target SK</label><input v-model="modalGuru.form.target_jam" type="number" min="0" class="input-underline"></div></div></div><div class="modal-actions"><button @click="modalGuru.tampil = false" class="btn-outline">Batal</button><button @click="simpanGuru()" class="btn-solid">Simpan</button></div></div></div>
-        <div v-if="modalImport.tampil" class="modal-overlay" @click.self="modalImport.tampil = false"><div class="modal-box import-box"><div class="modal-header"><h3>Import via Excel</h3><button @click="modalImport.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><textarea v-model="modalImport.teksData" rows="6" class="input-underline font-mono" placeholder="Paste data dari Excel di sini..."></textarea></div><div class="modal-actions"><button @click="modalImport.tampil = false" class="btn-outline">Batal</button><button @click="prosesImport()" class="btn-solid">Proses</button></div></div></div>
+        <div v-if="modalImport.tampil" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4 transition-opacity">
+      <div class="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden border border-gray-100">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+          <h3 class="text-lg font-bold text-slate-800">
+            Import {{ modalImport.jenis === 'guru' ? 'Data Guru' : 'Master Waktu' }} via Excel
+          </h3>
+          <button @click="modalImport.tampil = false" class="text-gray-400 hover:text-red-500 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        
+        <div class="p-6">
+          <div class="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-900 shadow-inner">
+            <p class="font-bold mb-3 flex items-center">
+              <span class="mr-2 text-lg">📋</span> Urutan Kolom Excel (Tanpa Header/Judul):
+            </p>
+            
+            <ul v-if="modalImport.jenis === 'guru'" class="list-decimal ml-6 space-y-1.5 font-medium">
+              <li><strong>Kode Guru</strong> <span class="text-blue-700 font-normal">(Maks 4 huruf, cth: BUDI)</span></li>
+              <li><strong>Nama Lengkap</strong> <span class="text-blue-700 font-normal">(cth: Budi Santoso, S.Pd.)</span></li>
+              <li><strong>Kode Mapel</strong> <span class="text-blue-700 font-normal">(cth: MTK, IPA, IND)</span></li>
+              <li><strong>Durasi JP per Pertemuan</strong> <span class="text-blue-700 font-normal">(Angka, cth: 2)</span></li>
+              <li><strong>Target Jam Seminggu</strong> <span class="text-blue-700 font-normal">(Angka, cth: 24)</span></li>
+            </ul>
+
+            <ul v-else class="list-decimal ml-6 space-y-1.5 font-medium">
+              <li><strong>Hari</strong> <span class="text-blue-700 font-normal">(cth: Senin)</span></li>
+              <li><strong>Tipe Sesi</strong> <span class="text-blue-700 font-normal">(Isi: <em>pelajaran</em> atau <em>khusus</em>)</span></li>
+              <li><strong>Jam Ke-</strong> <span class="text-blue-700 font-normal">(Isi angka 1, 2. Jika khusus isi strip "-")</span></li>
+              <li><strong>Rentang Waktu</strong> <span class="text-blue-700 font-normal">(cth: 07.00 - 07.45)</span></li>
+              <li><strong>Keterangan</strong> <span class="text-blue-700 font-normal">(Opsional, cth: Upacara, Istirahat)</span></li>
+            </ul>
+            
+            <div class="mt-4 text-xs text-blue-800 bg-blue-100 p-2.5 rounded border border-blue-200">
+              💡 <strong>CARA CEPAT:</strong> Blok data baris di Excel, tekan <code>Ctrl + C</code>, lalu klik di kotak bawah ini dan tekan <code>Ctrl + V</code>.
+            </div>
+          </div>
+
+          <textarea v-model="modalImport.teksData" rows="6" class="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-slate-800 focus:border-slate-800 transition-shadow bg-gray-50 hover:bg-white" placeholder="Paste (Ctrl+V) data dari Excel di sini..."></textarea>
+        </div>
+        
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3 rounded-b-xl">
+          <button @click="modalImport.tampil = false" class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">Batal</button>
+          <button @click="prosesImport" class="px-5 py-2.5 text-sm font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-800 shadow-md transition-transform active:scale-95">Proses Data</button>
+        </div>
+      </div>
+    </div>
         <div v-if="modalRombel.tampil" class="modal-overlay" @click.self="modalRombel.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalRombel.isManual ? 'Tambah Rombel' : 'Generate Rombel' }}</h3><button @click="modalRombel.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div v-if="modalRombel.isManual" class="form-group"><label>Nama Rombel</label><input v-model="modalRombel.form.nama" class="input-underline"></div><div v-else><div class="form-group"><label>Tingkat (Contoh: 7)</label><input v-model="modalRombel.form.tingkat" class="input-underline"></div><div class="form-group"><label>Jumlah Rombel</label><input v-model="modalRombel.form.jumlah" type="number" class="input-underline"></div></div></div><div class="modal-actions"><button @click="modalRombel.tampil = false" class="btn-outline">Batal</button><button @click="simpanRombel()" class="btn-solid">Simpan</button></div></div></div>
         <div v-if="modalWaktu.tampil" class="modal-overlay" @click.self="modalWaktu.tampil = false"><div class="modal-box"><div class="modal-header"><h3>{{ modalWaktu.form.id ? 'Edit Jam' : 'Tambah Jam' }}</h3><button @click="modalWaktu.tampil = false" class="btn-close-modal">✕</button></div><div class="modal-body"><div class="form-group"><label>Hari</label><select v-model="modalWaktu.form.hari" class="input-underline"><option v-for="h in ['Senin','Selasa','Rabu','Kamis','Jumat']" :key="h" :value="h">{{ h }}</option></select></div><div class="form-group"><label>Tipe Waktu</label><select v-model="modalWaktu.form.tipe" class="input-underline"><option value="pelajaran">Jam Pelajaran</option><option value="khusus">Kegiatan Khusus</option></select></div><div class="form-group"><label>Rentang Waktu</label><input v-model="modalWaktu.form.waktu" class="input-underline" placeholder="Misal: 07.00 - 07.40"></div><div class="form-group" v-if="modalWaktu.form.tipe === 'pelajaran'"><label>Jam Ke-</label><input v-model="modalWaktu.form.jam_ke" type="number" class="input-underline"></div><div class="form-group" v-if="modalWaktu.form.tipe === 'khusus'"><label>Nama Kegiatan</label><input v-model="modalWaktu.form.nama_kegiatan" class="input-underline" placeholder="Misal: Upacara"></div></div><div class="modal-actions"><button @click="modalWaktu.tampil = false" class="btn-outline">Batal</button><button @click="simpanWaktu()" class="btn-solid">Simpan</button></div></div></div>
         
