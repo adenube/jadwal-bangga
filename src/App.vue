@@ -842,7 +842,11 @@ const prosesImport = async () => {
     if (modalImport.jenis === 'guru' && kolom.length >= 5) { 
       payload.push({ kode: kolom[0].trim().toUpperCase().substring(0,4), nama: kolom[1].trim(), mapel: kolom[2].trim(), durasi_mapel: parseInt(kolom[3].trim()) || 2, target_jam: parseInt(kolom[4].trim()) || 0, kode_sekolah: currentUser.value.kode_sekolah }) 
     } else if (modalImport.jenis === 'waktu' && kolom.length >= 4) { 
-      payload.push({ hari: kolom[0].trim(), tipe: kolom[1].trim().toLowerCase(), jam_ke: kolom[2].trim() === '-' ? '' : kolom[2].trim(), waktu: kolom[3].trim(), nama_kegiatan: kolom[4] ? kolom[4].trim() : '', kode_sekolah: currentUser.value.kode_sekolah }) 
+      // PERBAIKAN DI SINI: Deteksi angka atau strip untuk jam_ke
+      let nilaiJamKe = kolom[2].trim();
+      nilaiJamKe = (nilaiJamKe === '-' || nilaiJamKe === '') ? null : parseInt(nilaiJamKe);
+
+      payload.push({ hari: kolom[0].trim(), tipe: kolom[1].trim().toLowerCase(), jam_ke: nilaiJamKe, waktu: kolom[3].trim(), nama_kegiatan: kolom[4] ? kolom[4].trim() : '', kode_sekolah: currentUser.value.kode_sekolah }) 
     } 
   }); 
   if (payload.length > 0) { const tabel = modalImport.jenis === 'guru' ? 'guru' : 'master_waktu'; await supabase.from(tabel).insert(payload); } modalImport.tampil = false; fetchData(); 
